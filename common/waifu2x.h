@@ -29,8 +29,8 @@ class stImage;
 class Factor
 {
 private:
-	double mNumerator; // •ªq
-	double mDenominator; // •ê”
+	double mNumerator; // åˆ†å­
+	double mDenominator; // åˆ†æ¯
 
 public:
 	Factor() : mNumerator(1.0), mDenominator(1.0)
@@ -105,6 +105,7 @@ public:
 		eWaifu2xError_FailedConstructModel,
 		eWaifu2xError_FailedProcessCaffe,
 		eWaifu2xError_FailedCudaCheck,
+		eWaifu2xError_FailedVulkanCheck,
 		eWaifu2xError_FailedUnknownType,
 	};
 
@@ -125,6 +126,15 @@ public:
 		eWaifu2xcuDNNError_OldCudaVersion,
 	};
 
+	// Basic Vulkan availability enum
+	enum eWaifu2xVulkanError
+	{
+		eWaifu2xVulkanError_OK = 0,
+		eWaifu2xVulkanError_NotFind,
+		eWaifu2xVulkanError_Unsupported,
+		eWaifu2xVulkanError_CannotCreate,
+	};
+
 	typedef std::function<bool()> waifu2xCancelFunc;
 
 	static std::string ExeDir;
@@ -142,8 +152,8 @@ private:
 	std::shared_ptr<cNet> mNoiseNet;
 	std::shared_ptr<cNet> mScaleNet;
 
-	int mInputPlane; // ƒlƒbƒg‚Ö‚Ì“ü—Íƒ`ƒƒƒ“ƒlƒ‹”
-	int mMaxNetOffset; // ƒlƒbƒg‚É“ü—Í‚·‚é‚Æ‚Ç‚ê‚­‚ç‚¢í‚ê‚é‚©
+	int mInputPlane; // ãƒãƒƒãƒˆãƒ¯ãƒ¼ã‚¯ãŒæƒ³å®šã™ã‚‹ãƒãƒ£ãƒ³ãƒãƒ«æ•°
+	int mMaxNetOffset; // ãƒãƒƒãƒˆãƒ¯ãƒ¼ã‚¯ãŒå¿…è¦ã¨ã™ã‚‹ãƒ‘ãƒ‡ã‚£ãƒ³ã‚°
 	bool mHasNoiseScaleOnly;
 
 	float *mOutputBlock;
@@ -178,13 +188,14 @@ public:
 
 	static eWaifu2xCudaError can_use_CUDA();
 	static eWaifu2xcuDNNError can_use_cuDNN();
+	static eWaifu2xVulkanError can_use_Vulkan();
 
 	static void init_liblary(int argc, char** argv);
 	static void quit_liblary();
 	static void quit_thread_liblary();
 
 	// mode: noise or scale or noise_scale or auto_scale
-	// process: cpu or gpu or cudnn
+	// process: cpu or gpu or cudnn or vulkan
 	eWaifu2xError Init(const eWaifu2xModelType mode, const int noise_level,
 		const boost::filesystem::path &model_dir, const std::string &process, const int gpu_no = 0);
 
@@ -194,11 +205,11 @@ public:
 		const boost::optional<int> output_quality = boost::optional<int>(), const int output_depth = 8, const bool use_tta = false,
 		const int batch_size = 1);
 
-	// factor: ”{—¦
-	// source: (4ƒ`ƒƒƒ“ƒlƒ‹‚Ìê‡‚Í)RGBA‚È‰æ‘f”z—ñ
-	// dest: (4ƒ`ƒƒƒ“ƒlƒ‹‚Ìê‡‚Í)ˆ—‚µ‚½RGBA‚È‰æ‘f”z—ñ
-	// in_stride: source‚ÌƒXƒgƒ‰ƒCƒh(ƒoƒCƒg’PˆÊ)
-	// out_stride: dest‚ÌƒXƒgƒ‰ƒCƒh(ƒoƒCƒg’PˆÊ)
+	// factor: å€ç‡
+	// source: (4byte aligned when RGBA) source RGBA/BGRA etc
+	// dest: (4byte aligned when RGBA) destination buffer
+	// in_stride: source stride (bytes per row)
+	// out_stride: dest stride (bytes per row)
 	eWaifu2xError waifu2x(const double factor, const void* source, void* dest, const int width, const int height,
 		const int in_channel, const int in_stride, const int out_channel, const int out_stride,
 		const int crop_w = 128, const int crop_h = 128,  const bool use_tta = false, const int batch_size = 1);
